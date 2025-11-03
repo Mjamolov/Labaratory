@@ -1,0 +1,68 @@
+﻿<div class="card pd-20 pd-sm-40">
+    <h6 class="card-body-title">Форма Пациента</h6>
+    <p class="mg-b-20 mg-sm-b-30">Форма для добавление нового пациента!</p>
+    <form asp-controller="Patient" asp-action="Index" method="post">
+    <div class="form-layout">
+        <div class="row mg-b-25">
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label class="form-control-label">Имя: <span class="tx-danger">*</span></label>
+                    <input class="form-control" type="text" name="Name" placeholder="Введите Имя">
+                </div>
+            </div><!-- col-4 -->
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label class="form-control-label">Фамилия: <span class="tx-danger">*</span></label>
+                    <input class="form-control" type="text" name="Surname" placeholder="Введите Фамилию">
+                </div>
+            </div><!-- col-4 -->
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label class="form-control-label">Отчество: <span class="tx-danger">*</span></label>
+                    <input class="form-control" type="text" name="Lastname" placeholder="Введите Отчество">
+                </div>
+            </div><!-- col-4 -->
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label class="form-control-label">Номер: <span class="tx-danger">*</span></label>
+                    <input class="form-control" type="tel" name="PhoneNumber" placeholder="Введите номер телефона">
+                </div>
+            </div><!-- col-4 -->
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label class="form-control-label">Дата рождения: <span class="tx-danger">*</span></label>
+                    <input class="form-control" type="date" name="BirthDay" placeholder="Выберите дату рождения">
+                </div>
+            </div><!-- col-4 -->
+            <div class="col-lg-4">
+                <div class="form-group">
+                    <label class="form-control-label">Email address: <span class="tx-danger">*</span></label>
+                    <input class="form-control" type="text" name="email" placeholder="Введите Email">
+                </div>
+            </div><!-- col-4 -->
+            <div class="col-lg-8">
+                <div class="form-group mg-b-10-force">
+                    <label class="form-control-label">Адрес: <span class="tx-danger">*</span></label>
+                    <input class="form-control" type="text" name="Adress" placeholder="Введите Адрес">
+                </div>
+            </div><!-- col-8 -->
+            <div class="col-lg-4">
+                <div class="form-group mg-b-10-force">
+                    <label class="form-control-label">Страна: <span class="tx-danger">*</span></label>
+                    <select class="form-control select2" data-placeholder="Выбор страны">
+                        <option value="UZB">Узбекистан</option>
+                        <option value="TJK">Таджикистан</option>
+                        <option value="KZN">Казахстан</option>
+                        <option value="Ru">Россия</option>
+                    </select>
+                </div>
+            </div><!-- col-4 -->
+        </div><!-- row -->
+
+        <div class="form-layout-footer">
+            <button class="btn btn-info mg-r-5">Отправить</button>
+            <a asp-controller="Application" asp-action="PatientList" class="btn btn-secondary">Отмена</a>
+        </div><!-- form-layout-footer -->
+    </div><!-- form-layout -->
+    </form>
+</div><!-- card -->

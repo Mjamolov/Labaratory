@@ -1,0 +1,94 @@
+﻿@using X.PagedList.Mvc.Core;
+@using X.PagedList;
+@model IPagedList<Labaratory.Models.User>
+
+<div class="card pd-20 pd-sm-40">
+    <h6 class="card-body-title">Список пользователей</h6>
+    <p class="mg-b-20 mg-sm-b-30">Список всех зарегистрированных пользователей.</p>
+
+    <div class="mb-3">
+        <a href="/Users/Create" class="btn btn-success">Создать нового пользователя</a>
+    </div>
+    
+
+<div class="table-responsive">
+    <div class="table-wrapper">
+        <table id="datatable1" class="table display responsive nowrap">
+            <thead>
+                <tr>
+                    <th class="wd-15p">#</th>
+                    <th class="wd-15p">Логин</th>
+                    <th class="wd-20p">Пароль</th>
+                    <th class="wd-15p">Имя</th>
+                    <th class="wd-10p">Фамилия</th>
+                    <th class="wd-25p">E-mail</th>
+                    <th class="wd-25p">Действие</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (Model != null && Model.Any())
+                {
+                    int index = (Model.PageNumber - 1) * Model.PageSize + 1; // Учитываем номер страницы
+                    foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@index</td>
+                            <td>@user.UserName</td>
+                            <td>@user.Password</td>
+                            <td>@user.FirsName</td>
+                            <td>@user.LastName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                <div class="d-flex">
+                                    <a class="btn btn-sm btn-primary" asp-action="Edit" asp-route-id="@user.Id">Изменить</a>
+                                    <form asp-controller="Users" asp-action="Delete" asp-route-id="@user.Id" method="post">
+                                        <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Вы уверены, что хотите удалить этого пользователя?');">
+                                            Удалить
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        index++;
+                    }
+                }
+            </tbody>
+        </table>
+    </div><!-- table-wrapper -->
+</div>
+
+<div class="ht-80 bd d-flex align-items-center justify-content-center">
+    <nav aria-label="Page navigation">
+        <ul class="pagination pagination-basic mg-b-0">
+            @if (Model!.HasPreviousPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", new { page = Model.PageNumber - 1 })" aria-label="Previous">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                </li>
+            }
+            @for (int i = 1; i <= Model.PageCount; i++)
+            {
+                if (i == Model.PageNumber)
+                {
+                    <li class="page-item active"><a class="page-link" href="#">@i</a></li>
+                }
+                else
+                {
+                    <li class="page-item"><a class="page-link" href="@Url.Action("Index", new { page = i })">@i</a></li>
+                }
+            }
+            @if (Model.HasNextPage)
+            {
+                <li class="page-item">
+                    <a class="page-link" href="@Url.Action("Index", new { page = Model.PageNumber + 1 })" aria-label="Next">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                </li>
+            }
+        </ul>
+    </nav>
+</div>
+
+</div><!-- card -->

@@ -1,0 +1,20 @@
+﻿@model string
+
+<div class="card pd-20 pd-sm-40 mg-t-50">
+    <h6 class="card-body-title">Добавить новую роль</h6>
+    <p class="mg-b-20 mg-sm-b-30">Введите название новой роли для добавления в систему.</p>
+
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+    <form asp-action="Create" method="post">
+        <div class="form-group">
+            <label for="name">Название роли</label>
+            <input name="name" id="name" class="form-control form-control-lg" placeholder="Введите название роли" required />
+        </div>
+
+        <div class="form-layout-footer text-center mt-4">
+            <button type="submit" class="btn btn-success btn-lg mg-r-10">Добавить</button>
+            <a asp-action="Index" class="btn btn-secondary btn-lg">Отмена</a>
+        </div>
+    </form>
+</div>

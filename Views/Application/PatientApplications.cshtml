@@ -1,0 +1,376 @@
+﻿@* @model List<Labaratory.Models.PatientApplication> *@
+@using X.PagedList.Mvc.Core
+@model X.PagedList.IPagedList<Labaratory.Models.PatientApplication>
+
+@{
+    ViewData["Title"] = "История заявок пациента";
+}
+<div class="card pd-20 pd-sm-40">
+    <h6 class="card-body-title">Заявки пациента</h6>
+    <p class="mg-b-20 mg-sm-b-30">Пациент: @ViewBag.PatientName Телефон: @ViewBag.PatientPhone</p>
+
+    <div class="mb-3">
+        @* <a href="/Patient/Index" class="btn btn-success">Добавить заявку</a> *@
+        <a href="/Application/PatientList" class="btn btn-success">Добавить заявку</a>
+    </div>
+
+    <div class="table-responsive">
+        <div class="table-wrapper">
+            @if (Model == null || !Model.Any())
+            {
+                <p>Для данного пациента заявок не найдено.</p>
+            }
+            else
+            {
+                <table id="datatable1" class="table display responsive nowrap">
+                    <thead>
+                        <tr>
+                            <th>№</th>
+                            @* <th>Тип оплаты</th> *@
+                            <th>Сумма оплаты</th>
+                            <th>Скидка %</th>
+                            <th>Общая стоимость</th>
+                            <th>Итоговая стоимость</th>
+                            <th>Статус оплаты</th>
+                            <th>Выбранные врачи</th>
+                            <th>Выбранные анализы</th>
+                            <th>Действия</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var application in Model)
+                        {
+                            <tr>
+                                <td>@application.Id</td>
+                                @* <td>@application.PaymentType</td> *@
+                                <td>@application.PaymentAmount</td>
+                                <td>@application.Discount</td>
+                                <td>@application.TotalCost</td>
+                                <td>@application.FinalCost</td>
+                                <td>@(application.IsFullyPaid ? "Оплачено" : "Не оплачено")</td>
+                                <td>
+                                    @if (application.DoctorsList.Any())
+                                    {
+                                        <ul>
+                                            @foreach (var doctor in application.DoctorsList)
+                                            {
+                                                <li>@doctor.FirsName @doctor.LastName</li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span>Врачи не назначены</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (application.AnalyzeNames.Any())
+                                    {
+                                        <ul>
+                                            @foreach (var analyze in application.AnalyzeNames)
+                                            {
+                                                <li>@analyze</li>
+                                            }
+                                        </ul>
+                                    }
+                                    else
+                                    {
+                                        <span>Анализы не выбраны</span>
+                                    }
+                                </td>
+                                <td>
+                                    <!-- Кнопка просмотра заявки (увидеть всю информацию о заявке) хотя хрень знает работает нет)) -->
+                                    <a asp-action="ShowApplication" asp-route-id="@application.Patient!.GuidId" asp-route-unId="@application.UniqId" target="_blank" class="btn btn-primary btn-sm" data-toggle="tooltip" title="Распечатка результатов">
+                                        <i class="icon ion-document-text"></i>
+                                    </a>
+
+                                    <!-- Кнопка для добавления оплаты (потому что деньги любят счет) -->
+                                    <button type="button" class="btn btn-warning btn-sm" data-toggle="modal" data-target="#addPaymentModal-@application.Id" title="Добавить оплату">
+                                        <i class="fa fa-credit-card"></i>
+                                    </button>
+
+                                    <!-- Кнопка изменения скидки (ну кто не любит скидки?) -->
+                                    <button type="button" class="btn btn-secondary btn-sm" data-toggle="modal" data-target="#updateDiscountModal-@application.Id" title="Изменить скидку">
+                                        <i class="fa fa-gift"></i>
+                                    </button>
+
+                                    <!-- Кнопка для загрузки результатов анализов (пусть доктор радуется бабкки будут капать) -->
+                                    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#addAnalysisModal-@application.Id" title="Добавить результаты анализов">
+                                        <i class="fa fa-plus"></i>
+                                    </button>
+                                    <!-- Кнопка просмотра результатов (если пациент хочет увидеть правду, хотя лучше ему не знать) -->
+                                    <button type="button" class="btn btn-info btn-sm btn-view-results" data-toggle="modal" data-target="#viewResultsModal-@application.Id" data-application-id="@application.Id" title="Просмотреть результаты">
+                                        <i class="fa fa-eye"></i>
+                                    </button>
+                                    <form method="post" asp-action="RouteToAnalysisResult" asp-controller="Application" style="display:inline;">
+                                        <input type="hidden" name="applicationId" value="@application.Id" />
+                                        <button type="submit" class="btn btn-primary btn-sm" title="Добавить результаты">
+                                            <i class="fa fa-plus"></i>
+                                        </button>
+                                    </form>
+
+                                </td>
+                            </tr>
+
+                            <!-- Модальное окно для просмотра результатов анализов -->
+                            <!-- Это окно покажет результаты анализов. Или не покажет, если сервер решил взять выходной -->
+                            <div class="modal fade" id="viewResultsModal-@application.Id" tabindex="-1" role="dialog">
+                                <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-info text-white">
+                                            <h5 class="modal-title">
+                                                Результаты анализов - заявка #@application.Id
+                                            </h5>
+                                            <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                        </div>
+                                        <div class="modal-body" style="max-height: 60vh; overflow-y: auto;">
+                                            <div id="analysisResults-@application.Id" class="text-center text-muted">
+                                                Загрузка данных... <!-- Терпение, друг, порой лучше не знать что там скрывается)) -->
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Закрыть</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Модальное окно для добавления оплаты -->
+                            <!-- Здесь можно добавить оплату. Или потерять деньги. Шутка. Или нет. -->
+                            <div class="modal fade" id="addPaymentModal-@application.Id" tabindex="-1" role="dialog">
+                                <div class="modal-dialog modal-dialog-vertical-center" role="document">
+                                    <div class="modal-content bd-0 tx-14">
+                                        <div class="modal-header pd-y-20 pd-x-25">
+                                            <h6 class="tx-14 mg-b-0 tx-uppercase tx-inverse tx-bold">Добавить оплату</h6>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <form asp-action="AddToPaymentAmount" method="post">
+                                            <div class="modal-body pd-25">
+                                                <input type="hidden" name="applicationId" value="@application.Id" />
+                                                <div class="form-group">
+                                                    <label>Сумма оплаты</label>
+                                                    <input type="text" class="form-control" name="additionalAmount" required min="0" />
+                                                    <!-- Введите сумму. Желательно больше, но можно и меньше -->
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-info pd-x-20">Добавить</button>
+                                                <button type="button" class="btn btn-secondary pd-x-20" data-dismiss="modal">Закрыть</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Модальное окно для изменения скидки -->
+                            <!-- Меняйте скидку, но не злоупотребляйте, иначе бухгалтер будет в шоке -->
+                            <div class="modal fade" id="updateDiscountModal-@application.Id" tabindex="-1" role="dialog">
+                                <div class="modal-dialog modal-dialog-vertical-center" role="document">
+                                    <div class="modal-content bd-0 tx-14">
+                                        <div class="modal-header pd-y-20 pd-x-25">
+                                            <h6 class="tx-14 mg-b-0 tx-uppercase tx-inverse tx-bold">Изменить скидку</h6>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <form asp-action="UpdateDiscount" method="post">
+                                            <div class="modal-body pd-25">
+                                                <input type="hidden" name="applicationId" value="@application.Id" />
+                                                <div class="form-group">
+                                                    <label>Новая скидка (%)</label>
+                                                    <input type="number" class="form-control" name="discount" min="0" max="100" required />
+                                                    <!-- Да, можно поставить 100%, но кто вам это одобрит? -->
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-info pd-x-20">Обновить</button>
+                                                <button type="button" class="btn btn-secondary pd-x-20" data-dismiss="modal">Закрыть</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Модальное окно для добавления результата анализа -->
+                            <!-- Добавьте результаты анализов, и пусть врачи решают, хорошо это или плохо -->
+                            <div class="modal fade" id="addAnalysisModal-@application.Id" tabindex="-1" role="dialog">
+                                <div class="modal-dialog modal-dialog-vertical-center" role="document">
+                                    <div class="modal-content bd-0 tx-14">
+                                        <div class="modal-header pd-y-20 pd-x-25">
+                                            <h5 class="tx-14 mg-b-0 tx-uppercase tx-inverse tx-bold">Добавить результат анализа</h5>
+                                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                                <span aria-hidden="true">&times;</span>
+                                            </button>
+                                        </div>
+                                        <form asp-action="AddAnalysisResult" method="post">
+                                            <div class="modal-body pd-25">
+                                                <input type="hidden" name="applicationId" value="@application.Id" />
+                                                <div class="form-group">
+                                                    <label>Тип анализа</label>
+                                                    <select class="form-control" name="analyzeTypeId" required>
+                                                        @foreach (var analyzeType in application.AnalyzeTypesList)
+                                                        {
+                                                            <option value="@analyzeType.Id">@analyzeType.AnalyzeName</option>
+                                                        }
+                                                    </select>
+                                                    <!-- Выберите анализ. Ничего не перепутайте, тут важные вещи -->
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Результат</label>
+                                                    <input type="text" class="form-control" name="result" required />
+                                                    <!-- Напишите что-нибудь, но лучше правду -->
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Норма</label>
+                                                    <input type="text" class="form-control" name="NormalRange" required />
+                                                    <!-- Если не знаете норму, можно наугад. Но лучше не надо -->
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="submit" class="btn btn-info pd-x-20">Сохранить</button>
+                                                <button type="button" class="btn btn-secondary pd-x-20" data-dismiss="modal">Закрыть</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+
+    <div class="ht-80 bd d-flex align-items-center justify-content-center">
+        <nav aria-label="Page navigation">
+            <ul class="pagination pagination-basic mg-b-0">
+                @if (Model.HasPreviousPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("PatientApplications", new { patientId = ViewBag.PatientId, page = Model.PageNumber - 1 })" aria-label="Previous">
+                            <i class="fa fa-angle-left"></i>
+                        </a>
+                    </li>
+                }
+                @for (int i = 1; i <= Model.PageCount; i++)
+                {
+                    if (i == Model.PageNumber)
+                    {
+                        <li class="page-item active"><a class="page-link" href="#">@i</a></li>
+                    }
+                    else
+                    {
+                        <li class="page-item"><a class="page-link" href="@Url.Action("PatientApplications", new { patientId = ViewBag.PatientId, page = i })">@i</a></li>
+                    }
+                }
+                @if (Model.HasNextPage)
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="@Url.Action("PatientApplications", new { patientId = ViewBag.PatientId, page = Model.PageNumber + 1 })" aria-label="Next">
+                            <i class="fa fa-angle-right"></i>
+                        </a>
+                    </li>
+                }
+            </ul>
+        </nav>
+    </div>
+
+
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        $('.btn-view-results').on('click', function () {
+            var applicationId = $(this).data('application-id');
+            var modalBody = $("#analysisResults-" + applicationId);
+
+            console.log("🔍 Отправка запроса к серверу для заявки ID:", applicationId);
+
+                $.ajax({
+                    url: "/Application/GetAnalysisResults",
+                    type: "GET",
+                    data: { applicationId: applicationId },
+                    success: function (response) {
+                        if (response.isPrescription) {
+                            modalBody.html(`
+                            <div class="p-3">
+                                <h5 class="text-center mb-3">Назначение</h5>
+                                <p class="text-justify" style="white-space: pre-wrap;">${response.text}</p>
+                            </div>
+                        `);
+                        } else if (response.data.length > 0) {
+                            var tableHtml = `<div class="table-responsive">
+                                <table class="table table-bordered table-hover">
+                                    <thead class="thead-dark text-center">
+                                        <tr>
+                                            <th>Тип анализа</th>
+                                            <th>Результат</th>
+                                            <th>Норма</th>
+                                            <th>Дата</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>`;
+
+                            response.data.forEach(function (result) {
+                                tableHtml += `<tr>
+                                    <td><strong>${result.analyzeName || "Неизвестно"}</strong></td>
+                                    <td class="text-center"><strong>${result.result || "Не указано"}</strong></td>
+                                    <td class="text-center">${result.normalRange || "Не указано"}</td>
+                                    <td class="text-center">${result.resultDate}</td>
+                                </tr>`;
+                            });
+
+                            tableHtml += `</tbody></table></div>`;
+                            modalBody.html(tableHtml);
+                        } else {
+                            modalBody.html("<p class='text-center text-muted'>Результаты анализов отсутствуют.</p>");
+                        }
+                    },
+                    error: function (xhr) {
+                        modalBody.html("<p class='text-center text-danger'>Ошибка загрузки данных.</p>");
+                    }
+                });
+
+        });
+    });
+</script>
+
+
+@if (!string.IsNullOrEmpty(ViewBag.Alert))
+{
+    <div id="alertMessage" class="alert alert-warning">
+        @ViewBag.Alert
+    </div>
+}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let alertBox = document.getElementById("alertMessage");
+        if (alertBox) {
+            setTimeout(function () {
+                alertBox.style.transition = "opacity 1s";
+                alertBox.style.opacity = "0";
+                setTimeout(() => alertBox.remove(), 1000); // Удаление после анимации
+            }, 10000);
+        }
+    });
+</script>
+
+<style>
+    .alert {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px;
+        background-color: #ffcc00;
+        color: black;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+</style>
+

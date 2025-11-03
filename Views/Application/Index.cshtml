@@ -1,0 +1,370 @@
+﻿@model PatientAnalyzeView
+
+<div class="card pd-20 pd-sm-40 mg-t-50">
+    <h6 class="card-body-title">Форма для создания заявки для пациента</h6>
+    <p class="mg-b-20 mg-sm-b-30">Эта форма используется для создание(выбора врача, анализов и тд.).</p>
+    
+    <form id="applicationForm" asp-controller="Application" asp-action="Confirm" method="post">
+        <div id="wizard2">
+            <!-- Выбор врача -->
+            <h3>Выбор врача</h3>
+            <section>
+                <div class="form-group wd-xs-300">
+                    <label class="form-control-label">Выберите врача: <span class="tx-danger">*</span></label>
+                    <div id="selected-doctors">
+                        @if (Model?.Doctor != null && Model.Doctor.Any())
+                        {
+                            @foreach (var doctor in Model.Doctor)
+                            {
+                                <div class="form-check">
+                                    <input type="checkbox" class="form-check-input"
+                                           id="doctor-@doctor.Id"
+                                           name="SelectedDoctors" value="@doctor.Id">
+                                    <label class="form-check-label" for="doctor-@doctor.Id">
+                                        @doctor.LastName @doctor.FirsName
+                                    </label>
+                                </div>
+                            }
+                        }
+                        else
+                        {
+                            <p class="text-danger">Нет доступных врачей.</p>
+                        }
+                    </div>
+                </div>
+            </section>
+
+
+            <!-- Выбор анализов -->
+            <h3>Выбор анализов</h3>
+            <section id="analyze-container">
+                @* @if (Model?.AnalyzeType != null && Model.AnalyzeType.Any())
+                {
+                    @foreach (var analyze in Model.AnalyzeType)
+                    {
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input analyze-checkbox"
+                                   id="analyze-@analyze.Id"
+                                   name="SelectedAnalyzeTypes" value="@analyze.Id">
+                            <label class="form-check-label" for="analyze-@analyze.Id">
+                                @analyze.AnalyzeName
+                            </label>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-danger">Нет доступных анализов.</p>
+                } *@
+                <div id="analyze-list"></div>
+                <div class="form-group wd-xs-300 mt-3">
+                    <strong>Общая стоимость:</strong> <span id="total-cost">0.00</span> 
+                </div>
+            </section>
+
+
+            <!-- Информация пациента -->
+            <h3>Информация пациента</h3>
+            <section>
+                <div class="form-group wd-xs-300">
+                    <input id="firstname" class="form-control" name="Patient.Id" placeholder="Введите Id"
+                           type="text" value="@Model?.Patient?.Id" readonly required hidden>
+                    <label class="form-control-label">Имя: <span class="tx-danger">*</span></label>
+                    <input id="firstname" class="form-control" name="Patient.Name" placeholder="Введите имя"
+                           type="text" value="@Model?.Patient?.Name" readonly required>
+                </div>
+                <div class="form-group wd-xs-300">
+                    <label class="form-control-label">Фамилия: <span class="tx-danger">*</span></label>
+                    <input id="lastname" class="form-control" name="Patient.Surname" placeholder="Введите фамилию"
+                           type="text" value="@Model?.Patient?.Surname" readonly required>
+                </div>
+                <div class="form-group wd-xs-300">
+                    <label class="form-control-label">Отчество: <span class="tx-danger">*</span></label>
+                    <input id="lastname" class="form-control" name="Patient.Lastname" placeholder="Введите отчество"
+                           type="text" value="@Model?.Patient?.Lastname" readonly required>
+                </div>
+                <div class="form-group wd-xs-300">
+                    <label class="form-control-label">Тип оплаты: <span class="tx-danger">*</span></label>
+                    <select class="form-control" id="payment-type" name="PaymentType" required>
+                        <option value="full" selected>Полная оплата</option>
+                        <option value="partial">Частичная оплата</option>
+                        <option value="deferred">Отложенная оплата</option>
+                        <option value="terminal">Терминал</option>
+                        <option value="online">Онлайн</option>
+                    </select>
+                </div>
+                <div class="form-group wd-xs-300" id="payment-amount-container" style="display: none;">
+                    <label class="form-control-label">Сумма оплаты (SUM):</label>
+                    <input id="payment-amount" class="form-control" name="PaymentAmount" type="number"
+                           step="0.01" placeholder="Введите сумму оплаты">
+                </div>
+                <div class="form-group wd-xs-300">
+                    <label class="form-control-label">Скидка (%):</label>
+                    <input id="discount" class="form-control" name="Discount" type="number"
+                           step="1" min="0" max="100" placeholder="Введите скидку в процентах">
+                </div>
+                <div class="form-group wd-xs-300 mt-3">
+                    <strong>Итоговая сумма с учетом скидки:</strong> <span id="final-cost">0.00</span> SUM.
+                </div>
+            </section>
+        </div>
+    </form>
+
+</div><!-- card -->
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const doctorCheckboxes = document.querySelectorAll('input[name="SelectedDoctors"]');
+            const analyzeContainer = document.querySelector("#analyze-list"); // Теперь добавляем анализы сюда
+
+            doctorCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener("change", function () {
+                    updateAnalyzeOptions();
+                });
+            });
+
+            function updateAnalyzeOptions() {
+                const selectedDoctors = Array.from(doctorCheckboxes)
+                    .filter(checkbox => checkbox.checked)
+                    .map(checkbox => checkbox.value);
+
+                if (selectedDoctors.length === 0) {
+                    analyzeContainer.innerHTML = "<p class='text-danger'>Выберите врача, чтобы увидеть доступные анализы.</p>";
+                    return;
+                }
+
+                fetch('/Application/GetAnalyzesByDoctors', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(selectedDoctors)
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        renderAnalyzes(data);
+                    })
+                    .catch(error => console.error('Ошибка загрузки анализов:', error));
+            }
+
+            function renderAnalyzes(analyzes) {
+                analyzeContainer.innerHTML = "";  // Очищаем перед добавлением новых анализов
+                if (analyzes.length === 0) {
+                    analyzeContainer.innerHTML = "<p class='text-danger'>Нет доступных анализов.</p>";
+                    return;
+                }
+
+                analyzes.forEach(analyze => {
+                    const analyzeElement = `
+                        <div class="form-check">
+                            <input type="checkbox" class="form-check-input analyze-checkbox"
+                                   id="analyze-${analyze.id}" name="SelectedAnalyzeTypes" value="${analyze.id}">
+                            <label class="form-check-label" for="analyze-${analyze.id}">
+                                ${analyze.analyzeName}
+                            </label>
+                        </div>`;
+                    analyzeContainer.insertAdjacentHTML("beforeend", analyzeElement);
+                });
+            }
+        });
+
+
+    </script>
+
+    <script>
+        //     document.addEventListener("DOMContentLoaded", function () {
+
+        //     function attachAnalyzeEvents() {
+        //         const checkboxes = document.querySelectorAll(".analyze-checkbox");
+        //         const totalCostElement = document.getElementById("total-cost");
+
+        //         checkboxes.forEach(checkbox => {
+        //             // Удаляем старый обработчик перед добавлением нового
+        //             checkbox.removeEventListener("change", analyzeCheckboxChangeHandler);
+        //             checkbox.addEventListener("change", analyzeCheckboxChangeHandler);
+        //         });
+
+        //         function analyzeCheckboxChangeHandler() {
+        //             const selectedIds = Array.from(checkboxes)
+        //                 .filter(cb => cb.checked)
+        //                 .map(cb => parseInt(cb.value));
+
+        //             fetch('@Url.Action("GetTotalCost", "Application")', {
+        //                 method: "POST",
+        //                 headers: {
+        //                     "Content-Type": "application/json"
+        //                 },
+        //                 body: JSON.stringify(selectedIds)
+        //             })
+        //                 .then(response => response.json())
+        //                 .then(data => {
+        //                     if (data.success) {
+        //                         totalCostElement.textContent = data.totalCost.toFixed(2);
+        //                     } else {
+        //                         alert("Ошибка при расчете стоимости");
+        //                     }
+        //                 })
+        //                 .catch(error => {
+        //                     console.error("Ошибка:", error);
+        //                 });
+        //         }
+        //     }
+
+
+        //     attachAnalyzeEvents();
+        // });
+        document.addEventListener("DOMContentLoaded", function () {
+            const analyzeContainer = document.querySelector("#analyze-list");
+            const totalCostElement = document.getElementById("total-cost");
+
+            analyzeContainer.addEventListener("change", function (event) {
+                if (event.target.classList.contains("analyze-checkbox")) {
+                    analyzeCheckboxChangeHandler();
+                }
+            });
+
+            function analyzeCheckboxChangeHandler() {
+                const selectedIds = Array.from(document.querySelectorAll(".analyze-checkbox:checked"))
+                    .map(cb => parseInt(cb.value));
+
+                console.log("Выбранные анализы:", selectedIds); // Отладка перед отправкой
+
+                fetch('/Application/GetTotalCost', {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify(selectedIds)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Ошибка HTTP: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log("Ответ сервера:", data); // Отладка ответа сервера
+                        if (data.success) {
+                            totalCostElement.textContent = data.totalCost.toFixed(2) + " SUM";
+                        } else {
+                            console.error("Ошибка при расчете стоимости");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Ошибка запроса:", error);
+                    });
+            }
+        });
+
+
+    </script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const paymentType = document.getElementById("payment-type");
+            const paymentAmountContainer = document.getElementById("payment-amount-container");
+            const paymentAmount = document.getElementById("payment-amount");
+            const discount = document.getElementById("discount");
+            const finalCostElement = document.getElementById("final-cost");
+            const totalCostElement = document.getElementById("total-cost");
+            const form = document.getElementById("applicationForm");
+
+            function updatePaymentFields() {
+                if (paymentType.value === "full") {
+                    paymentAmountContainer.style.display = "none";
+                    paymentAmount.value = ""; 
+                    calculateFinalCost(); 
+                } else if (paymentType.value === "partial") {
+                    paymentAmountContainer.style.display = "block";
+                } else if (paymentType.value === "deferred") {
+                    paymentAmountContainer.style.display = "none";
+                    paymentAmount.value = "0"; // Для отложенной оплаты
+                    finalCostElement.textContent = totalCostElement.textContent; 
+                }
+            }
+
+            function calculateFinalCost() {
+                const totalCost = parseFloat(totalCostElement.textContent) || 0;
+                const discountValue = parseFloat(discount.value) || 0;
+
+                if (discountValue < 0 || discountValue > 100) {
+                    alert("Скидка должна быть в диапазоне от 0 до 100");
+                    return;
+                }
+
+                // Рассчитываем общую сумму со скидкой
+                const discountedAmount = totalCost - (totalCost * discountValue / 100);
+
+                if (paymentType.value === "full" || paymentType.value === "deferred") {
+                    finalCostElement.textContent = discountedAmount.toFixed(2);
+                } else if (paymentType.value === "partial") {
+                    const partialAmount = parseFloat(paymentAmount.value) || 0;
+
+                    if (partialAmount > discountedAmount) {
+                        alert("Сумма частичной оплаты не может превышать итоговую сумму со скидкой");
+                        paymentAmount.value = discountedAmount.toFixed(2);
+                    }
+
+                    // Итоговая сумма всегда отображает общую сумму со скидкой
+                    finalCostElement.textContent = discountedAmount.toFixed(2);
+                }
+            }
+
+
+
+            function submitFormHandler(event) {
+                const totalCost = parseFloat(totalCostElement.textContent) || 0;
+                const discountedCost = parseFloat(finalCostElement.textContent) || 0;
+                const discountValue = parseFloat(discount.value) || 0;
+                const paymentTypeValue = paymentType.value;
+                const paymentAmountValue = parseFloat(paymentAmount.value) || 0;
+
+                // Добавляем скрытые поля для отправки данных
+                const hiddenTotal = document.createElement("input");
+                hiddenTotal.type = "hidden";
+                hiddenTotal.name = "TotalCost";
+                hiddenTotal.value = totalCost;
+
+                const hiddenDiscounted = document.createElement("input");
+                hiddenDiscounted.type = "hidden";
+                hiddenDiscounted.name = "DiscountedCost";
+                hiddenDiscounted.value = discountedCost;
+
+                const hiddenDiscount = document.createElement("input");
+                hiddenDiscount.type = "hidden";
+                hiddenDiscount.name = "Discount";
+                hiddenDiscount.value = discountValue;
+
+                const hiddenPaymentType = document.createElement("input");
+                hiddenPaymentType.type = "hidden";
+                hiddenPaymentType.name = "PaymentType";
+                hiddenPaymentType.value = paymentTypeValue;
+
+                if (paymentTypeValue === "partial") {
+                    const hiddenPaymentAmount = document.createElement("input");
+                    hiddenPaymentAmount.type = "hidden";
+                    hiddenPaymentAmount.name = "PaymentAmount";
+                    hiddenPaymentAmount.value = paymentAmountValue;
+                    form.appendChild(hiddenPaymentAmount);
+                }
+
+                // Добавляем поля в форму
+                form.appendChild(hiddenTotal);
+                form.appendChild(hiddenDiscounted);
+                form.appendChild(hiddenDiscount);
+                form.appendChild(hiddenPaymentType);
+            }
+
+            // Добавляем обработчики событий
+            paymentType.addEventListener("change", updatePaymentFields);
+            discount.addEventListener("input", calculateFinalCost);
+            paymentAmount.addEventListener("input", calculateFinalCost);
+            form.addEventListener("submit", submitFormHandler);
+
+            // Инициализация при загрузке
+            updatePaymentFields();
+        });
+    </script>
+
+
+}

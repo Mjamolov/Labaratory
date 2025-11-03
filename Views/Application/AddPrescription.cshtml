@@ -1,0 +1,18 @@
+﻿@model Labaratory.Models.PatientApplication
+
+@{
+    ViewData["Title"] = "Назначение";
+    var defaultText = ViewBag.PrescriptionText as string ?? "";
+}
+
+<h3>Назначение для: @($"{Model.Patient?.Surname} {Model.Patient?.Name} {Model.Patient?.Lastname}")</h3>
+
+<form asp-action="AddPrescription" method="post">
+    <input type="hidden" name="applicationId" value="@Model.Id" />
+    <div class="form-group">
+        <label>Текст назначения</label>
+        <textarea name="prescriptionText" class="form-control" rows="5" required>@defaultText</textarea>
+    </div>
+    <button type="submit" class="btn btn-success">Сохранить назначение</button>
+    <a href="@Url.Action("PatientApplications", "Application", new { patientId = Model.PatientId })" class="btn btn-secondary">Отмена</a>
+</form>

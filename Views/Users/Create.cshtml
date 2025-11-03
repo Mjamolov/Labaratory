@@ -1,0 +1,51 @@
+﻿@model Labaratory.Models.ViewModels.CreateUserViewModel
+@{
+    ViewBag.Title = "Добавление пользователя";
+}
+
+<div class="d-flex justify-content-center align-items-center" style="height: 100vh; padding: 20px;">
+    <!-- Левая форма -->
+    <div class="col-xl-6">
+        <div class="card pd-30 pd-sm-50 form-layout form-layout-4">
+            <h6 class="card-body-title">Форма ввода</h6>
+            <p class="mg-b-30 mg-sm-b-40">Введите информацию для создания нового пользователя.</p>
+            <form asp-action="Create" asp-controller="Users">
+                <div asp-validation-summary="All" class="text-danger"></div>
+                <div class="row mg-b-20">
+                    <label class="col-sm-4 form-control-label">Логин: <span class="tx-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="text" asp-for="Login" class="form-control form-control-lg" placeholder="Введите логин">
+                    </div>
+                </div>
+                <div class="row mg-b-20">
+                    <label class="col-sm-4 form-control-label">Пароль: <span class="tx-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="password" asp-for="Password" class="form-control form-control-lg" placeholder="Введите пароль">
+                    </div>
+                </div>
+                <div class="row mg-b-20">
+                    <label class="col-sm-4 form-control-label">Имя: <span class="tx-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="text" asp-for="FirsName" class="form-control form-control-lg" placeholder="Введите имя">
+                    </div>
+                </div>
+                <div class="row mg-b-20">
+                    <label class="col-sm-4 form-control-label">Фамилия: <span class="tx-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="text" asp-for="LastName" class="form-control form-control-lg" placeholder="Введите фамилию">
+                    </div>
+                </div>
+                <div class="row mg-b-20">
+                    <label class="col-sm-4 form-control-label">Email: <span class="tx-danger">*</span></label>
+                    <div class="col-sm-8">
+                        <input type="email" asp-for="Email" class="form-control form-control-lg" placeholder="Введите Email">
+                    </div>
+                </div>
+                <div class="form-layout-footer text-center">
+                    <button type="submit" class="btn btn-info btn-lg mg-r-10">Добавить</button>
+                    <a href="Index" class="btn btn-secondary btn-lg">Отмена</a>
+                </div><!-- form-layout-footer -->
+            </form>
+        </div><!-- card -->
+    </div><!-- col-6 -->
+</div><!-- row -->

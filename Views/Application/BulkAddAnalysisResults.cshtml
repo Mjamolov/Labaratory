@@ -1,0 +1,96 @@
+﻿@model Labaratory.Models.PatientApplication
+
+@{
+    ViewData["Title"] = "Массовое добавление результатов";
+    var subItems = ViewBag.SubItems as List<Labaratory.Models.AnalyzeSubItem> ?? new List<Labaratory.Models.AnalyzeSubItem>();
+    var resultItems = ViewBag.SubItemResults as List<Labaratory.Models.SubItemResult> ?? new();
+}
+
+<div class="card pd-20 pd-sm-40">
+    <h6 class="card-body-title">Массовое добавление результатов</h6>
+    <p class="mg-b-20 mg-sm-b-30">Пациент: @(Model.Patient != null ? $"{Model.Patient.Surname} {Model.Patient.Name} {Model.Patient.Lastname}" : "—")</p>
+
+    <!-- Форма для обычных анализов без подпоказателей -->
+    <form method="post" asp-action="SaveBulkAnalysisResults">
+        <input type="hidden" name="applicationId" value="@Model.Id" />
+
+        <h6 class="tx-semibold">Основные анализы</h6>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Тип анализа</th>
+                    <th>Показатель</th>
+                    <th>Результат</th>
+                    <th>Норма</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var analyze in Model.AnalyzeTypesList)
+                {
+                    var hasSubItems = subItems.Any(s => s.AnalyzeTypeId == analyze.Id);
+                    if (!hasSubItems)
+                    {
+                        var mainResult = Model.AnalysisResults.FirstOrDefault(r => r.AnalyzeTypeId == analyze.Id);
+                        <tr>
+                            <td>@analyze.AnalyzeName</td>
+                            <td>-</td>
+                            <td>
+                                <input type="text" class="form-control" name="AnalysisResults[@analyze.Id].Result" value="@mainResult?.Result" />
+                            </td>
+                            <td>
+                                <input type="text" class="form-control" name="AnalysisResults[@analyze.Id].NormalRange" value="@(mainResult?.NormalRange ?? analyze.NormalResult)" />
+                            </td>
+                            <input type="hidden" name="AnalysisResults[@analyze.Id].AnalyzeTypeId" value="@analyze.Id" />
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-success">Сохранить основные анализы</button>
+    </form>
+
+    <!-- Форма для подпоказателей -->
+    <form method="post" asp-action="SaveSubItemResults" class="mt-5">
+        <input type="hidden" name="applicationId" value="@Model.Id" />
+
+        <h6 class="tx-semibold">Подпоказатели</h6>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Тип анализа</th>
+                    <th>Показатель</th>
+                    <th>Результат</th>
+                    <th>Норма</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var analyze in Model.AnalyzeTypesList)
+                {
+                    var analyzeSubItems = subItems.Where(s => s.AnalyzeTypeId == analyze.Id).ToList();
+                    if (analyzeSubItems.Any())
+                    {
+                        foreach (var sub in analyzeSubItems)
+                        {
+                            var savedResult = resultItems.FirstOrDefault(r => r.AnalyzeSubItemId == sub.Id);
+                            <tr>
+                                <td>@analyze.AnalyzeName</td>
+                                <td>@sub.Name</td>
+                                <td>
+                                    <input type="text" class="form-control" name="SubItemResults[@sub.Id].Result" value="@(savedResult?.Result)" />
+                                </td>
+                                <td>
+                                    <input type="text" class="form-control" name="SubItemResults[@sub.Id].NormalRange" value="@(savedResult?.NormalRange ?? sub.NormalRange)" />
+                                </td>
+                                <input type="hidden" name="SubItemResults[@sub.Id].AnalyzeSubItemId" value="@sub.Id" />
+                            </tr>
+                        }
+                    }
+                }
+            </tbody>
+        </table>
+
+        <button type="submit" class="btn btn-primary">Сохранить подпоказатели</button>
+        <a href="@Url.Action("PatientApplications", "Application", new { patientId = Model.PatientId })" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
