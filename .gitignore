@@ -21,3 +21,7 @@ Logs/
 TestResult*/
 Properties/PublishProfiles/*.pubxml
 appsettings.*.Local.json
+
+appsettings.json
+appsettings.*.Local.json
+Logs/
